@@ -10,7 +10,6 @@
 #ifndef IPLINEEDIT_H
 #define IPLINEEDIT_H
 
-#include <QWidget>
 #include <QLineEdit>
 #include <QEvent>
 
@@ -19,7 +18,7 @@ class IPLineEdit : public QLineEdit
     Q_OBJECT
 
 public:
-    IPLineEdit(QWidget *parent = 0);
+    IPLineEdit(QWidget *parent = nullptr);
     ~IPLineEdit();
 
     void setText(const QString &strIP);

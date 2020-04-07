@@ -12,8 +12,6 @@
 #include <QPainter>
 #include <QHBoxLayout>
 #include <QKeyEvent>
-#include <QMessageBox>
-#include <QDebug>
 #include <QLabel>
 
 IPLineEdit::IPLineEdit(QWidget *parent)
@@ -22,7 +20,7 @@ IPLineEdit::IPLineEdit(QWidget *parent)
     QRegExp rx("(2[0-5]{2}|2[0-4][0-9]|1?[0-9]{1,2})");
     QHBoxLayout *pHBox = new QHBoxLayout(this);
     pHBox->setSpacing(0);
-    pHBox->setContentsMargins(1, 1, 1, 1);
+    pHBox->setContentsMargins(0, 0, 0, 0);
     for (int i = 0; i < 4; i++)
     {
         QLineEdit* e = new QLineEdit();
@@ -34,6 +32,7 @@ IPLineEdit::IPLineEdit(QWidget *parent)
         e->installEventFilter(this);
         e->setValidator(new QRegExpValidator(rx, this));
         e->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+        e->setContentsMargins(1,1,1,1);
         pHBox->addWidget(e, 1);
 
         if (3 != i) {
@@ -44,8 +43,9 @@ IPLineEdit::IPLineEdit(QWidget *parent)
             pHBox->addWidget(l);
         }
     }
+
     this->setReadOnly(true);
-    this->setFixedWidth(142);
+    //this->setFixedWidth(142);
 }
 
 IPLineEdit::~IPLineEdit()
