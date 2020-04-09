@@ -3,6 +3,7 @@
 
 #include <QPushButton>
 #include <QBitmap>
+#include <QPropertyAnimation>
 
 class SwitchButton : public QPushButton
 {
@@ -16,6 +17,7 @@ class SwitchButton : public QPushButton
     Q_PROPERTY(QBrush disableHandleBrush READ disableHandleBrush WRITE setDisableHandleBrush)
     Q_PROPERTY(int    margin             READ margin             WRITE setMargin            )
     Q_PROPERTY(bool   handleIn           READ handleIn           WRITE setHandleIn          )
+    Q_PROPERTY(qreal  offset             READ offset             WRITE setOffset            )
 
 public:
     explicit SwitchButton(QWidget *parent = nullptr);
@@ -39,8 +41,16 @@ public:
     bool handleIn() const;
     void setHandleIn(bool handleIn);
 
+    qreal offset() const;
+    void setOffset(const qreal &offset);
+
+    void setChecked(bool c);
+
 private:
     void init();
+
+private slots:
+    void onThisBtnClicked();
 
 protected:
     void paintEvent(QPaintEvent *) override;
@@ -54,6 +64,9 @@ private:
     QBrush m_disableHandleBrush;
     int    m_margin = 4;
     bool   m_handleIn = true; // true-圆点比滑槽小，在滑槽内，false-圆点比滑槽大，在滑槽外
+
+    qreal  m_offset = 0.0;
+    QPropertyAnimation m_animation;
 };
 
 #endif // SWITCHBUTTON_H

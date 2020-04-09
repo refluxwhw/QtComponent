@@ -1,6 +1,6 @@
 ﻿#include "SwitchButton.h"
 #include <QPainter>
-
+#include <QDebug>
 
 SwitchButton::SwitchButton(QWidget *parent)
     : QPushButton(parent)
@@ -16,7 +16,27 @@ void SwitchButton::init()
     m_offHandleBrush     = QBrush(Qt::white);
     m_disableGrooveBrush = QBrush(Qt::lightGray);
     m_disableHandleBrush = QBrush(QColor(220,220,220));
-    this->setCheckable(true);
+    setCheckable(true);
+
+    m_animation.setTargetObject(this);
+    m_animation.setPropertyName("offset");
+    m_animation.setDuration(200);
+    connect(this, &SwitchButton::clicked, this, &SwitchButton::onThisBtnClicked);
+
+    m_offset = isChecked() ? 1.0 : 0.0;
+}
+
+void SwitchButton::onThisBtnClicked()
+{
+    m_animation.stop();
+    if (isChecked()) {
+        m_animation.setStartValue(0.0);
+        m_animation.setEndValue(1.0);
+    } else {
+        m_animation.setStartValue(1.0);
+        m_animation.setEndValue(0.0);
+    }
+    m_animation.start();
 }
 
 void SwitchButton::paintEvent(QPaintEvent *)
@@ -53,12 +73,11 @@ void SwitchButton::paintEvent(QPaintEvent *)
     p.setBrush(groove);
     p.drawRoundedRect(rect, r, r);
 
-    QPointF pos; // 滑块中点
-    if (isChecked()) {
-        pos = QPointF(w-s/2.0, h-s/2.0);
-    } else {
-        pos = QPointF(s/2.0, s/2.0);
-    }
+    QPointF startPos(s/2.0, s/2.0);
+    QPointF endPos(w-s/2.0, h-s/2.0);
+    // 滑块中点
+    QPointF pos(startPos.rx()+m_offset*(endPos.rx()-startPos.rx()),
+                startPos.ry()+m_offset*(endPos.ry()-startPos.ry()));
     r = qMin(w, h)/2.0; // 滑块半径
     if (m_handleIn) {
         r -= m_margin;
@@ -66,6 +85,30 @@ void SwitchButton::paintEvent(QPaintEvent *)
 
     p.setBrush(handle);
     p.drawEllipse(pos, r, r);
+
+    QFont font = this->font();
+    font.setPixelSize((int)(r*1.2));
+    p.setFont(font);
+    p.setPen(groove.color());
+    p.drawText(QRectF(pos.rx()-r, pos.ry()-r, 2*r, 2*r), Qt::AlignCenter,
+               isChecked() ? QStringLiteral("开") : QStringLiteral("关"));
+}
+
+qreal SwitchButton::offset() const
+{
+    return m_offset;
+}
+
+void SwitchButton::setOffset(const qreal &offset)
+{
+    m_offset = offset;
+    update();
+}
+
+void SwitchButton::setChecked(bool c)
+{
+    m_offset = c ? 1.0 : 0.0;
+    QPushButton::setChecked(c);
 }
 
 bool SwitchButton::handleIn() const
