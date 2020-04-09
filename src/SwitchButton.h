@@ -4,68 +4,80 @@
 #include <QPushButton>
 #include <QBitmap>
 #include <QPropertyAnimation>
+#include <QPainter>
 
 class SwitchButton : public QPushButton
 {
     Q_OBJECT
 
-    Q_PROPERTY(QBrush onGrooveBrush      READ onGrooveBrush      WRITE setOnGrooveBrush     )
-    Q_PROPERTY(QBrush onHandleBrush      READ onHandleBrush      WRITE setOnHandleBrush     )
-    Q_PROPERTY(QBrush offGrooveBrush     READ offGrooveBrush     WRITE setOffGrooveBrush    )
-    Q_PROPERTY(QBrush offHandleBrush     READ offHandleBrush     WRITE setOffHandleBrush    )
-    Q_PROPERTY(QBrush disableGrooveBrush READ disableGrooveBrush WRITE setDisableGrooveBrush)
-    Q_PROPERTY(QBrush disableHandleBrush READ disableHandleBrush WRITE setDisableHandleBrush)
-    Q_PROPERTY(int    margin             READ margin             WRITE setMargin            )
-    Q_PROPERTY(bool   handleIn           READ handleIn           WRITE setHandleIn          )
-    Q_PROPERTY(qreal  offset             READ offset             WRITE setOffset            )
+    Q_PROPERTY(QColor backgroundColorOn  READ getBackgroundColorOn  WRITE setBackgroundColorOn )
+    Q_PROPERTY(QColor backgroundColorOff READ getBackgroundColorOff WRITE setBackgroundColorOff)
+    Q_PROPERTY(QColor backgroundColorDis READ getBackgroundColorDis WRITE setBackgroundColorDis)
+    Q_PROPERTY(QColor sliderColorOn      READ getSliderColorOn      WRITE setSliderColorOn     )
+    Q_PROPERTY(QColor sliderColorOff     READ getSliderColorOff     WRITE setSliderColorOff    )
+    Q_PROPERTY(QColor sliderColorDis     READ getSliderColorDis     WRITE setSliderColorDis    )
+
+    Q_PROPERTY(int    sliderType         READ getSliderType         WRITE setSliderType        )
+    Q_PROPERTY(int    margin             READ getMargin             WRITE setMargin            )
+    Q_PROPERTY(int    radius             READ getRadius             WRITE setRadius            )
+    Q_PROPERTY(qreal  offset             READ getOffset             WRITE setOffset            )
 
 public:
+    enum class SliderType {
+        kRect = 0,
+        kCircleIn,
+        kCircleOut
+    };
+
     explicit SwitchButton(QWidget *parent = nullptr);
 
-    void setOnGrooveBrush(const QBrush &onGrooveBrush);
-    void setOnHandleBrush(const QBrush &onHandleBrush);
-    void setOffGrooveBrush(const QBrush &offGrooveBrush);
-    void setOffHandleBrush(const QBrush &offHandleBrush);
-    void setDisableGrooveBrush(const QBrush &disableGrooveBrush);
-    void setDisableHandleBrush(const QBrush &disableHandleBrush);
-    void setMargin(int margin);
-
-    QBrush onGrooveBrush() const;
-    QBrush onHandleBrush() const;
-    QBrush offGrooveBrush() const;
-    QBrush offHandleBrush() const;
-    QBrush disableGrooveBrush() const;
-    QBrush disableHandleBrush() const;
-    int margin() const;
-
-    bool handleIn() const;
-    void setHandleIn(bool handleIn);
-
-    qreal offset() const;
+    qreal getOffset() const;
     void setOffset(const qreal &offset);
+    int getSliderType() const;
+    void setSliderType(int type);
+    int getMargin() const;
+    void setMargin(int margin);
+    int getRadius() const;
+    void setRadius(int radius);
 
-    void setChecked(bool c);
-
-private:
-    void init();
-
-private slots:
-    void onThisBtnClicked();
+    QColor getBackgroundColorOn() const;
+    void setBackgroundColorOn(const QColor &backgroundColorOn);
+    QColor getBackgroundColorOff() const;
+    void setBackgroundColorOff(const QColor &backgroundColorOff);
+    QColor getBackgroundColorDis() const;
+    void setBackgroundColorDis(const QColor &backgroundColorDis);
+    QColor getSliderColorOn() const;
+    void setSliderColorOn(const QColor &sliderColorOn);
+    QColor getSliderColorOff() const;
+    void setSliderColorOff(const QColor &sliderColorOff);
+    QColor getSliderColorDis() const;
+    void setSliderColorDis(const QColor &sliderColorDis);
 
 protected:
     void paintEvent(QPaintEvent *) override;
 
 private:
-    QBrush m_onGrooveBrush     ;
-    QBrush m_onHandleBrush     ;
-    QBrush m_offGrooveBrush    ;
-    QBrush m_offHandleBrush    ;
-    QBrush m_disableGrooveBrush;
-    QBrush m_disableHandleBrush;
-    int    m_margin = 4;
-    bool   m_handleIn = true; // true-圆点比滑槽小，在滑槽内，false-圆点比滑槽大，在滑槽外
+    void init();
+    void drawBackground(QPainter& p);
+    void drawSlider(QPainter& p);
+    void drawText(QPainter& p, QRectF& rect);
 
-    qreal  m_offset = 0.0;
+private slots:
+    void onThisBtnClicked();
+
+private:
+    QColor m_backgroundColorOn ;
+    QColor m_backgroundColorOff;
+    QColor m_backgroundColorDis;    // 禁用颜色
+    QColor m_sliderColorOn     ;
+    QColor m_sliderColorOff    ;
+    QColor m_sliderColorDis    ;
+
+    SliderType m_sliderType = SliderType::kRect;
+    int        m_margin = 3;
+    qreal      m_offset = 1.0;
+    int        m_radius = 9;
+
     QPropertyAnimation m_animation;
 };
 

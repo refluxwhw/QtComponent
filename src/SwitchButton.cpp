@@ -10,91 +10,233 @@ SwitchButton::SwitchButton(QWidget *parent)
 
 void SwitchButton::init()
 {
-    m_onGrooveBrush      = QBrush(Qt::green);
-    m_onHandleBrush      = QBrush(Qt::white);
-    m_offGrooveBrush     = QBrush(Qt::gray);
-    m_offHandleBrush     = QBrush(Qt::white);
-    m_disableGrooveBrush = QBrush(Qt::lightGray);
-    m_disableHandleBrush = QBrush(QColor(220,220,220));
+    m_backgroundColorOn  = Qt::white;
+    m_sliderColorOn      = Qt::darkGreen;
+    m_backgroundColorOff = Qt::lightGray;
+    m_sliderColorOff     = QColor(100,100,100);
+    m_backgroundColorDis = Qt::lightGray;
+    m_sliderColorDis     = QColor(220,220,220);
     setCheckable(true);
 
     m_animation.setTargetObject(this);
     m_animation.setPropertyName("offset");
     m_animation.setDuration(200);
     connect(this, &SwitchButton::clicked, this, &SwitchButton::onThisBtnClicked);
-
-    m_offset = isChecked() ? 1.0 : 0.0;
-}
-
-void SwitchButton::onThisBtnClicked()
-{
-    m_animation.stop();
-    if (isChecked()) {
-        m_animation.setStartValue(0.0);
-        m_animation.setEndValue(1.0);
-    } else {
-        m_animation.setStartValue(1.0);
-        m_animation.setEndValue(0.0);
-    }
-    m_animation.start();
 }
 
 void SwitchButton::paintEvent(QPaintEvent *)
 {
     QPainter p(this);
-    int w = width();
-    int h = height();
-    int s = qMin(w, h); // 短边
-    p.setPen(Qt::NoPen);
-    p.setRenderHint(QPainter::Antialiasing, true);
+    p.setRenderHint(QPainter::Antialiasing);
 
-    QBrush groove;
-    QBrush handle;
-    if (isEnabled()) {
-        if (isChecked()) {
-            groove = m_onGrooveBrush;
-            handle = m_onHandleBrush;
-        } else {
-            groove = m_offGrooveBrush;
-            handle = m_offHandleBrush;
-        }
-    } else {
-        groove = m_disableGrooveBrush;
-        handle = m_disableHandleBrush;
-    }
-
-    QRectF rect;
-    if (m_handleIn) {
-        rect = this->rect();
-    } else {
-        rect = QRectF(m_margin, m_margin, w-2*m_margin, h-2*m_margin);
-    }
-    qreal r = qMin(rect.width(), rect.height())/2.0; // 滑槽圆角半径
-    p.setBrush(groove);
-    p.drawRoundedRect(rect, r, r);
-
-    QPointF startPos(s/2.0, s/2.0);
-    QPointF endPos(w-s/2.0, h-s/2.0);
-    // 滑块中点
-    QPointF pos(startPos.rx()+m_offset*(endPos.rx()-startPos.rx()),
-                startPos.ry()+m_offset*(endPos.ry()-startPos.ry()));
-    r = qMin(w, h)/2.0; // 滑块半径
-    if (m_handleIn) {
-        r -= m_margin;
-    }
-
-    p.setBrush(handle);
-    p.drawEllipse(pos, r, r);
-
-    QFont font = this->font();
-    font.setPixelSize((int)(r*1.2));
-    p.setFont(font);
-    p.setPen(groove.color());
-    p.drawText(QRectF(pos.rx()-r, pos.ry()-r, 2*r, 2*r), Qt::AlignCenter,
-               isChecked() ? QStringLiteral("开") : QStringLiteral("关"));
+    drawBackground(p);
+    drawSlider(p);
 }
 
-qreal SwitchButton::offset() const
+void SwitchButton::drawBackground(QPainter &p)
+{
+    p.save();
+    p.setPen(Qt::NoPen);
+
+    if (isEnabled()) {
+        if (isChecked()) {
+            p.setBrush(m_backgroundColorOn);
+        } else {
+            p.setBrush(m_backgroundColorOff);
+        }
+    } else {
+        p.setBrush(m_backgroundColorDis);
+    }
+
+    QRectF rect = this->rect();
+    qreal r = 0.0;
+    switch (m_sliderType) {
+        case SliderType::kRect:
+            r = m_radius;
+            break;
+
+        case SliderType::kCircleOut:
+            rect = QRectF(m_margin, m_margin,
+                          rect.width() - 2*m_margin,
+                          rect.height() - 2*m_margin);
+            r = qMin(rect.width(), rect.height()) / 2.0;
+            break;
+
+        case SliderType::kCircleIn:
+            r = qMin(rect.width(), rect.height()) / 2.0;
+            break;
+    }
+
+    p.drawRoundedRect(rect, r, r);
+    p.restore();
+}
+
+void SwitchButton::drawSlider(QPainter &p)
+{
+    p.save();
+
+    p.setPen(Qt::NoPen);
+    if (isEnabled()) {
+        if (isChecked()) {
+            p.setBrush(m_sliderColorOn);
+        } else {
+            p.setBrush(m_sliderColorOff);
+        }
+    } else {
+        p.setBrush(m_sliderColorDis);
+    }
+
+    qreal  w = width();
+    qreal  h = height();
+    qreal  s = qMin(w, h);
+    QPointF startPos(s/2.0, s/2.0);
+    QPointF endPos(w-s/2.0, h-s/2.0);
+    qreal dtaX = endPos.x() - startPos.x();
+    qreal dtaY = endPos.y() - startPos.y();
+
+    QPointF center;
+    if (isChecked()) {
+        center = QPointF(startPos.x() + m_offset * dtaX,
+                         startPos.y() + m_offset * dtaY);
+    } else {
+        center = QPointF(endPos.x() - m_offset * dtaX,
+                         endPos.y() - m_offset * dtaY);
+    }
+
+    qreal r = 0.0;
+    QRectF rect;
+    switch (m_sliderType) {
+        case SliderType::kRect:
+            s -= 2*m_margin;
+            r = m_radius;
+            break;
+
+        case SliderType::kCircleOut:
+            r = s / 2.0;
+            break;
+
+        case SliderType::kCircleIn: {
+            s -= 2*m_margin;
+            r = s / 2.0;
+            break;
+        }
+    }
+    rect = QRectF(center.x()-s/2.0, center.y()-s/2.0, s, s);
+    p.drawRoundedRect(rect, r, r);
+    p.restore();
+
+    drawText(p, rect);
+}
+
+void SwitchButton::drawText(QPainter &p, QRectF &rect)
+{
+    p.save();
+    QFont font = this->font();
+    font.setPixelSize((int)(rect.height()/1.5));
+    p.setFont(font);
+    p.setPen(isChecked() ? m_backgroundColorOn : m_backgroundColorOff);
+    p.drawText(rect, Qt::AlignCenter,
+               isChecked() ? QStringLiteral("开") : QStringLiteral("关"));
+    p.restore();
+}
+
+void SwitchButton::onThisBtnClicked()
+{
+    m_animation.stop();
+    m_animation.setStartValue(0.0);
+    m_animation.setEndValue(1.0);
+    m_animation.start();
+}
+
+QColor SwitchButton::getSliderColorDis() const
+{
+    return m_sliderColorDis;
+}
+
+void SwitchButton::setSliderColorDis(const QColor &sliderColorDis)
+{
+    m_sliderColorDis = sliderColorDis;
+    update();
+}
+
+QColor SwitchButton::getSliderColorOff() const
+{
+    return m_sliderColorOff;
+}
+
+void SwitchButton::setSliderColorOff(const QColor &sliderColorOff)
+{
+    m_sliderColorOff = sliderColorOff;
+    update();
+}
+
+QColor SwitchButton::getSliderColorOn() const
+{
+    return m_sliderColorOn;
+}
+
+void SwitchButton::setSliderColorOn(const QColor &sliderColorOn)
+{
+    m_sliderColorOn = sliderColorOn;
+    update();
+}
+
+QColor SwitchButton::getBackgroundColorDis() const
+{
+    return m_backgroundColorDis;
+}
+
+void SwitchButton::setBackgroundColorDis(const QColor &backgroundColorDis)
+{
+    m_backgroundColorDis = backgroundColorDis;
+    update();
+}
+
+QColor SwitchButton::getBackgroundColorOff() const
+{
+    return m_backgroundColorOff;
+}
+
+void SwitchButton::setBackgroundColorOff(const QColor &backgroundColorOff)
+{
+    m_backgroundColorOff = backgroundColorOff;
+    update();
+}
+
+QColor SwitchButton::getBackgroundColorOn() const
+{
+    return m_backgroundColorOn;
+}
+
+void SwitchButton::setBackgroundColorOn(const QColor &backgroundColorOn)
+{
+    m_backgroundColorOn = backgroundColorOn;
+    update();
+}
+
+int SwitchButton::getRadius() const
+{
+    return m_radius;
+}
+
+void SwitchButton::setRadius(int radius)
+{
+    m_radius = radius;
+    update();
+}
+
+int SwitchButton::getMargin() const
+{
+    return m_margin;
+}
+
+void SwitchButton::setMargin(int margin)
+{
+    m_margin = margin;
+    update();
+}
+
+qreal SwitchButton::getOffset() const
 {
     return m_offset;
 }
@@ -105,96 +247,13 @@ void SwitchButton::setOffset(const qreal &offset)
     update();
 }
 
-void SwitchButton::setChecked(bool c)
+int SwitchButton::getSliderType() const
 {
-    m_offset = c ? 1.0 : 0.0;
-    QPushButton::setChecked(c);
+    return (int)m_sliderType;
 }
 
-bool SwitchButton::handleIn() const
+void SwitchButton::setSliderType(int type)
 {
-    return m_handleIn;
-}
-
-void SwitchButton::setHandleIn(bool handleIn)
-{
-    m_handleIn = handleIn;
-    update();
-}
-
-int SwitchButton::margin() const
-{
-    return m_margin;
-}
-
-QBrush SwitchButton::disableHandleBrush() const
-{
-    return m_disableHandleBrush;
-}
-
-QBrush SwitchButton::disableGrooveBrush() const
-{
-    return m_disableGrooveBrush;
-}
-
-QBrush SwitchButton::offHandleBrush() const
-{
-    return m_offHandleBrush;
-}
-
-QBrush SwitchButton::offGrooveBrush() const
-{
-    return m_offGrooveBrush;
-}
-
-QBrush SwitchButton::onHandleBrush() const
-{
-    return m_onHandleBrush;
-}
-
-QBrush SwitchButton::onGrooveBrush() const
-{
-    return m_onGrooveBrush;
-}
-
-void SwitchButton::setMargin(int margin)
-{
-    m_margin = margin;
-    update();
-}
-
-void SwitchButton::setDisableHandleBrush(const QBrush &disableHandleBrush)
-{
-    m_disableHandleBrush = disableHandleBrush;
-    update();
-}
-
-void SwitchButton::setDisableGrooveBrush(const QBrush &disableGrooveBrush)
-{
-    m_disableGrooveBrush = disableGrooveBrush;
-    update();
-}
-
-void SwitchButton::setOffHandleBrush(const QBrush &offHandleBrush)
-{
-    m_offHandleBrush = offHandleBrush;
-    update();
-}
-
-void SwitchButton::setOffGrooveBrush(const QBrush &offGrooveBrush)
-{
-    m_offGrooveBrush = offGrooveBrush;
-    update();
-}
-
-void SwitchButton::setOnHandleBrush(const QBrush &onHandleBrush)
-{
-    m_onHandleBrush = onHandleBrush;
-    update();
-}
-
-void SwitchButton::setOnGrooveBrush(const QBrush &onGrooveBrush)
-{
-    m_onGrooveBrush = onGrooveBrush;
+    m_sliderType = (SliderType)type;
     update();
 }
